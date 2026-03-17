@@ -1,9 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { fetchProducts } from "../thunk/productThunk";
 
 const initialState = {
   cart: [],
   totalQty: 0,
   totalAmount: 0,
+  loading: false,
+  products: [],
 };
 
 const calcTotals = (state) => {
@@ -19,62 +22,56 @@ const productSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action) => {
-      const p = action.payload;
-      const existing = state.cart.find((x) => x.id === p.id);
+      const product = action.payload;
+      const existing = state.cart.find((item) => item.id === product.id);
 
       if (existing) {
         existing.qty += 1;
       } else {
-        state.cart.push({
-          id: p.id,
-          title: p.title,
-          price: p.price,
-          image: p.image,
-          weight: p.weight,
-          qty: 1,
-        });
+        state.cart.push({ ...product, qty: 1 });
       }
 
       calcTotals(state);
     },
 
     increaseQuantity: (state, action) => {
-      const id = action.payload;
-      const item = state.cart.find((x) => x.id === id);
-
-      if (item) {
-        item.qty += 1;
-      }
-
+      const item = state.cart.find((p) => p.id === action.payload);
+      if (item) item.qty += 1;
       calcTotals(state);
     },
 
     decreaseQuantity: (state, action) => {
-      const id = action.payload;
-      const item = state.cart.find((x) => x.id === id);
-
-      if (!item) return;
-
-      item.qty -= 1;
-
-      if (item.qty <= 0) {
-        state.cart = state.cart.filter((x) => x.id !== id);
+      const item = state.cart.find((p) => p.id === action.payload);
+      if (item) {
+        if (item.qty > 1) {
+          item.qty -= 1;
+        } else {
+          state.cart = state.cart.filter((p) => p.id !== action.payload);
+        }
       }
-
       calcTotals(state);
     },
 
     removeCartItem: (state, action) => {
-      const id = action.payload;
-      state.cart = state.cart.filter((x) => x.id !== id);
+      state.cart = state.cart.filter((item) => item.id !== action.payload);
       calcTotals(state);
     },
 
     clearCartItems: (state) => {
       state.cart = [];
-      state.totalQty = 0;
-      state.totalAmount = 0;
+      calcTotals(state);
     },
+  },
+
+  extraReducers: (builder) => {
+    builder.addCase(fetchProducts.fulfilled, (state, action) => {
+      state.loading = false;
+      state.products = action.payload.products;
+    });
+
+    builder.addCase(fetchProducts.pending, (state) => {
+      state.loading = true;
+    });
   },
 });
 
