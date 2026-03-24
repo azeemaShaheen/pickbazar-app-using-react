@@ -3,6 +3,8 @@ import PickBazar from "../../../assets/logo.webp";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { auth } from "../../../config/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 const registerSchema = yup.object({
   name: yup.string().required("Name is required"),
@@ -19,8 +21,16 @@ const Register = () => {
     resolver: yupResolver(registerSchema),
   });
 
-  const registerUser = (data) => {
+  const registerUser = async (data) => {
     console.log(data);
+
+    const resp=await createUserWithEmailAndPassword(auth, data.email, data.password);
+    console.log(resp);
+
+    if(resp.user.accessTokens){
+      navigate("/login");
+    }
+
   };
 
   return (
